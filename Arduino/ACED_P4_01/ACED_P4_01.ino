@@ -1,56 +1,70 @@
 /*
- * UNITEC Campus Queretaro
- * 
- * 
- * Practica 4: Contador de revoluciones
- * 
- * Autor: Ing. Gustavo David Mendoza Pinto 
- * Automatización y control en la era digital
+ *  Programa 1 practica 4 
+ *  Automatización y Control en la era Digital
+ *  UNITEC -  Campus Querétaro
+ *  Control de Motor con Arduino y Puente H
+ *  Autor: Ing. Gustavo David Mendoza Pinto
  */
 
 //Variables para uso en el encoder
 long int steps;
 long int timeOld;
 long int timeP;
-long int sampleTime = 500;
+long int sampleTime = 100;
 long int stepsOld;
 long int stepPerRad = 20;
-double rev;
+long int deltaTime;
+double revolutions;
+double RPS;
 long int deltaSteps;
-//V Variables de control del motor
-int control_motor = 9;
-int motorOutputA = 5;
-int motorOutputB = 4;
+// Variables de control de motor
+int reading;
+int angularVel;
+
+//V Variables de pines
+byte signalEN = 6; // Indicamos la salida pwm del arduino
+byte signalA = 8;
+byte signalB = 7;
+byte pot = A0;
+byte pinInterrupsion = 3;
+
 // Funciones globales
-void contador();
+void counter();
 void setup() {
-  // put your setup code here, to run once:
+  pinMode(signalEN, OUTPUT); // Configuramos puerto como salida digital
+  pinMode(signalA, OUTPUT); // Configuramos puerto como salida digital
+  pinMode(signalB, OUTPUT); // Configuramos puerto como salida digital
+
+  digitalWrite(signalA,HIGH); // enviamos un uno lógico a la salida A
+  digitalWrite(signalB,LOW);  // enviamos un cero lógico a la salida A
   Serial.begin(115200);
+  attachInterrupt(digitalPinToInterrupt(pinInterrupsion),counter,FALLING);
   steps = 0;
-  attachInterrupt(digitalPinToInterrupt(3),contador,FALLING);
   timeOld = 0;
-  pinMode(control_motor,OUTPUT);
-  pinMode(motorOutputA,OUTPUT);
-  pinMode(motorOutputB,OUTPUT);
 }
 
 void loop() {
   // put your main code here, to run repeatedly:
-  digitalWrite(motorOutputA,HIGH);
-  digitalWrite(motorOutputA,LOW);
-  analogWrite(control_motor,125);
+  digitalWrite(signalA,HIGH);
+  digitalWrite(signalB,LOW);
+  reading = analogRead(pot);
+  angularVel = map(reading,0,1023,0,255);
+  analogWrite(signalEN,angularVel);
   timeP = millis();
-  if(timeP -timeOld >= sampleTime){
+  deltaTime = timeP-timeOld;
+  
+  if(deltaTime >= sampleTime){
     noInterrupts();
     deltaSteps = steps - stepsOld;
-    rev= deltaSteps/20;
-    Serial.println(rev);
+    revolutions= deltaSteps/20;
+    RPS = (revolutions/double(deltaTime))*1000;
+    Serial.println(RPS);
     interrupts();
     timeOld = timeP;
   }
   
   
 }
-void contador(){
+void counter(){
   ++steps;
 }
